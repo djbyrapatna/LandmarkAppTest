@@ -14,17 +14,67 @@ struct ContentView: View {
         center: CLLocationCoordinate2D(latitude: 40.730610, longitude: -73.935242), // NYC
         span: MKCoordinateSpan(latitudeDelta: 0.2, longitudeDelta: 0.2)
     )
+    @State private var selectedLandmark: Landmark?
+    
     var body: some View {
-        Map(coordinateRegion: $region, annotationItems: viewModel.landmarks){ landmark in
-            MapMarker(coordinate: landmark.coordinate, tint: .blue)
+        NavigationStack{
+            VStack {
+                Text("Explore New York!").font(.largeTitle)
+                Map(coordinateRegion: $region, annotationItems: viewModel.landmarks){ landmark in
+                    MapAnnotation(coordinate: landmark.coordinate){
+                        VStack{
+                            Image(systemName: "mappin.circle.fill")
+                                .font(.title)
+                                .foregroundColor(.green)
+                            Text(landmark.name)
+                                .font(.caption)
+                                .fixedSize()
+                        }
+                        .onTapGesture{
+                            selectedLandmark = landmark
+                        }
+                    }
+                    
+                }
+                .frame(height:500)
+                ForEach(viewModel.landmarks) { landmark in
+                    HStack{
+                        Button(action: {
+                            centerMap(on: landmark)
+                            selectedLandmark = landmark
+                        }) {
+                            Text(landmark.name)
+                                .foregroundColor(.primary)
+                        }
+                        Spacer()
+                        NavigationLink(destination: TravelDetailView(landmark: landmark)) {
+                            Label("Travel Details", systemImage: "car")
+                        }
+                        
+                    }
+                    
+                }
+            }
             
+            
+            .task{
+                await viewModel.fetchLandmarks()
+            }
+            
+            .sheet(item: $selectedLandmark) { landmark in
+                LandmarkDetailView(landmark: landmark)
+            }
         }
-        .edgesIgnoringSafeArea(.all)
-        .task{
-            await viewModel.fetchLandmarks()
+    }
+    
+    func centerMap(on landmark: Landmark) {
+        withAnimation {
+            region.center = landmark.coordinate
         }
     }
 }
+
+
 
 #Preview {
     ContentView()

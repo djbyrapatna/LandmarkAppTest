@@ -20,3 +20,5 @@ struct Landmark: Identifiable, Codable {
     }
     
 }
+
+extension Landmark: Equatable {}
